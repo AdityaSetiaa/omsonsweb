@@ -1,65 +1,57 @@
-import Image from "next/image";
+"use client"
+
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <div className="min-h-screen bg-white dark:bg-neutral-950 font-sans flex flex-col">
+    <header className="flex items-center justify-between px-8 py-5 border-b border-gray-200 dark:border-neutral-800">
+      <h1 className="text-xl font-light tracking-wide text-gray-900 dark:text-white">
+        Omsons
+      </h1>
+      <nav className="flex items-center space-x-8">
+        <a href="#" className="text-sm text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white transition">
+          Home
+        </a>
+        <a href="#" className="text-sm text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white transition">
+          Products
+        </a>
+        <a href="#" className="text-sm text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white transition">
+          About
+        </a>
+        <a href="#" className="text-sm text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-white transition">
+          Contact
+        </a>
+      </nav>
+    </header>
+
+    <section className="flex-1 flex flex-col items-center justify-center px-6 py-32 bg-white dark:bg-neutral-950">
+      <div className="max-w-2xl text-center">
+        <h2 className="text-5xl md:text-6xl font-light tracking-tight text-gray-900 dark:text-white mb-6">
+          Welcome to Omson
+        </h2>
+        <p className="text-base text-gray-600 dark:text-neutral-400 leading-relaxed mb-12">
+          Discover a world of innovation and customer-first solutions. Built with simplicity and scale in mind.
+        </p>
+
+        <button className="px-6 py-3 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded hover:bg-gray-800 dark:hover:bg-neutral-100 transition-colors duration-200 mb-16">
+          Explore Products
+        </button>
+      </div>
+
+      <div className="space-y-3 w-full max-w-xs">
+        <p className="text-xs text-gray-500 dark:text-neutral-600 text-center mb-4">
+          Get started with Omsons
+        </p>
+        <Link href="/auth/login">
+        <button className="w-full px-6 py-3 text-sm font-medium text-gray-900 dark:text-white bg-gray-100 dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded hover:bg-gray-200 dark:hover:bg-neutral-800 transition-colors duration-200">
+          Sign In
+        </button>
+        </Link>      
+      </div>
+    </section>
+
+    
+  </div>
   );
 }
