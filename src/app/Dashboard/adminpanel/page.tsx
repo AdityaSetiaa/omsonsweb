@@ -29,7 +29,7 @@ export default function Dashboard() {
       
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r hidden md:block">
-        <div className="p-6 font-semibold text-lg">Admin Panel</div>
+        <div className="p-6 font-semibold text-lg text-black">Admin Panel</div>
         <nav className="space-y-2 px-4 text-sm">
           <div ><SidebarItem label="Dashboard" active /></div>
           <div className="absolute right-0 top-full mt-1 w-106 hidden group-hover:block z-60 bg-white shadow-lg border border-gray-200 rounded p-3">
@@ -49,7 +49,7 @@ export default function Dashboard() {
           <div className="font-medium">Welcome Ravi</div>
           <div className="flex gap-3 text-sm">
             <button className="bg-white/20 px-3 py-1 rounded">Admin</button>
-            <button className="bg-white/20 px-3 py-1 rounded">Logout</button>
+            <button className="bg-white/20 px-3 py-1 rounded"><Link href={"/"}>Logout</Link></button>
           </div>
         </header>
 
