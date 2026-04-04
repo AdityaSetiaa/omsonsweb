@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
+import axios from "axios"
 
 const ROLE_OPTIONS = [
   { label: "Staff", value: "1" },
@@ -9,42 +10,87 @@ const ROLE_OPTIONS = [
   { label: "Admin", value: "3" },
 ]
 
+const BACKEND_URL = "https://mirisoft.co.in/sas/dealerapi/login/login_verify"
+
 export default function Login() {
   const router = useRouter()
 
   const [roletype, setRoletype] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    setError("")
 
-    // optional: store demo user so other pages that expect a user don't break
-    localStorage.setItem(
-      "user",
-      JSON.stringify({
-        email: email || "demo@user.com",
-        role: roletype || "demo",
-      })
-    )
+    if (!email || !password || !roletype) {
+      setError("All fields are required")
+      return
+    }
 
-    router.push("/home")
+    if (!BACKEND_URL) {
+      setError("Backend URL is not configured")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      const formData = new FormData()
+      formData.append("email", email)
+      formData.append("password", password)
+      formData.append("roletype", roletype)
+
+      const res = await axios.post(
+        `${BACKEND_URL}`,
+        formData
+      )
+
+      const data = res.data
+
+      if (data?.status) {
+        const userData = data.data || {
+          email,
+          role: roletype,
+        }
+
+        localStorage.setItem("status", "true")
+        localStorage.setItem("UserData", JSON.stringify(userData))
+        localStorage.setItem("roletype", roletype)
+
+        setEmail("")
+        setPassword("")
+        setRoletype("")
+
+        router.push("/home")
+      } else {
+        setError(data?.msg || "Login failed")
+      }
+    } catch (err: any) {
+      console.error("Login error:", err)
+
+      const backendMsg =
+        err?.response?.data?.msg ||
+        err?.response?.data ||
+        err?.message ||
+        "Server error"
+
+      setError(typeof backendMsg === "string" ? backendMsg : "Server error")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4 dark:bg-black text-gray-900 dark:text-white">
       <form className="w-full max-w-sm" onSubmit={handleLogin}>
         <div className="mb-10">
-          <h1 className="text-2xl font-light tracking-tight">
-            Sign in
-          </h1>
-          <p className="text-sm text-gray-500 mt-2">
-            Demo mode enabled. Login is temporarily disabled.
-          </p>
+          <h1 className="text-2xl font-light tracking-tight">Sign in</h1>
         </div>
 
         <div className="space-y-4 mb-8">
-          {/* Role */}
           <div className="relative">
             <select
               value={roletype}
@@ -79,7 +125,6 @@ export default function Login() {
             </span>
           </div>
 
-          {/* Email */}
           <input
             type="email"
             placeholder="Email"
@@ -88,7 +133,6 @@ export default function Login() {
             className="w-full px-0 py-3 text-sm bg-transparent border-b border-gray-200 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:border-gray-900 dark:focus:border-white"
           />
 
-          {/* Password */}
           <input
             type="password"
             placeholder="Password"
@@ -98,11 +142,14 @@ export default function Login() {
           />
         </div>
 
+        {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
+
         <button
           type="submit"
-          className="w-full py-3 px-4 bg-gray-900 text-white text-sm font-medium rounded-sm hover:bg-gray-800 active:bg-gray-900 transition-all duration-200"
+          disabled={loading}
+          className="w-full py-3 px-4 bg-gray-900 text-white text-sm font-medium rounded-sm hover:bg-gray-800 active:bg-gray-900 transition-all duration-200 disabled:opacity-70"
         >
-          Continue
+          {loading ? "Signing in..." : "Continue"}
         </button>
       </form>
     </div>
