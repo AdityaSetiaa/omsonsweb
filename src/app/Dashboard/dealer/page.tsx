@@ -52,7 +52,7 @@ const logoImage = "http://sapoms.com/images/Omsons%20-%20White.png";
 
 const NAV_ITEMS = [
   {
-    label: "Dashboard", href: "/dealer",
+    label: "Home", href: "/home",
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
