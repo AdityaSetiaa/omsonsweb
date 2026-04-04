@@ -50,12 +50,12 @@ export default function DealerList() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL;
+  const BACKEND_URL = "https://mirisoft.co.in/sas/dealerapi/api";
   const itemsPerPage = 10;
 
   const queryClient = useQueryClient();
 
-  // 🔥 TanStack Query
+  
   const { data: response, isLoading } = useQuery<DealerResponse>({
     queryKey: ['dealers', page, search],
     queryFn: async () => {
@@ -80,7 +80,7 @@ export default function DealerList() {
     Math.ceil(total / itemsPerPage) ||
     (data.length < itemsPerPage ? page : page + 1);
 
-  // 🔥 Prefetch next page
+  
   useEffect(() => {
     queryClient.prefetchQuery({
       queryKey: ['dealers', page + 1, search],
@@ -93,7 +93,7 @@ export default function DealerList() {
     });
   }, [page, search]);
 
-  // 🔍 Debounced search
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       setPage(1);
