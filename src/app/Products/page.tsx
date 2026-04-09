@@ -1,272 +1,270 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import axios from 'axios';
+import AddToCart from '@/Components/AddToCart';
 
-interface Product {
-  id: number;
-  name: string;
-  category: string;
-  price: string;
-  image: string;
-  description: string;
-  link: string;
-}
+
+type Product = {
+  SKU: string;
+  Name: string;
+  Description: string;
+  "Short description": string;
+};
+
+const PAGE_SIZE = 20;
+
+const image =
+  "https://omsonslabs.com/wp-content/uploads/Pycnometers-Class-A-Individual-Work-Certificate-product-image.webp";
+
+const deals = [
+  { label: "Today's Deals", value: "today" },
+  { label: "Best Sellers", value: "bestsellers" },
+  { label: "New Arrivals", value: "new" },
+  { label: "Discounts on Sale", value: "discount" },
+];
 
 export default function ProductsPage() {
-  const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const [allData, setAllData] = useState<Product[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+
   const [priceRange, setPriceRange] = useState([0, 2000]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<string | null>(null);
 
-  const products: Product[] = [
-    {
-      id: 1,
-      name: 'Pycnometers Class A ',
-      category: 'Bottle',
-      price: '₹299',
-      image: 'https://omsonslabs.com/wp-content/uploads/Pycnometers-Class-A-Individual-Work-Certificate-product-image.webp',
-      description: '253 – Pycnometers Class A with NABL',
-      link: '/Products/meridian-pro'
-    },
-    {
-      id: 2,
-      name: 'Bottles Tooled Neck Amber ',
-      category: 'Bottle',
-      price: '₹189',
-      image: 'https://omsonslabs.com/wp-content/uploads/Bottles-Tooled-Neck-Amber-product-image.webp',
-      description: 'Recommended use with light-sensitive media and for long-term storage of substances.',
-      link: '/product/velocity-x'
-    },
-    {
-      id: 3,
-      name: ' Reagent Bottle Amber with GL 80 Cap ',
-      category: 'Bottle',
-      price: '₹1,299',
-      image: 'https://omsonslabs.com/wp-content/uploads/Reagent-Bottle-Amber-with-GL-80-Cap-product-image.webp',
-      description: 'These bottles are ideal for long term storage of light sensitive media & substance.',
-      link: '/product/lumina-desk'
-    },
-    {
-      id: 4,
-      name: ' Reagent Bottle High Recovery ',
-      category: 'Bottle',
-      price: '₹399',
-      image: 'https://omsonslabs.com/wp-content/uploads/Reagent-Bottle-High-Recovery-image.webp',
-      description: 'Complies With USP Type/Boro 3.3 Glass.',
-      link: '/product/nova-watch'
-    },
-    {
-      id: 5,
-      name: ' Specific Gravity Bottles Class B r',
-      category: 'Bottle',
-      price: '₹149',
-      image: 'https://omsonslabs.com/wp-content/uploads/Specific-Gravity-Bottles-Class-B-product-image.webp',
-      description: 'Made from High Quality Boro 3.3 Low Exp. Glass.',
-      link: '/product/echo-speaker'
-    },
-    {
-      id: 6,
-      name: ' BOD Bottle ',
-      category: 'Bottle',
-      price: '₹799',
-      image: 'https://omsonslabs.com/wp-content/uploads/BOD-Bottle-product-image.webp',
-      description: 'Made from ASTM-438, TYPE-1, Borosilicate 3.3 Glass',
-      link: '/product/prism-lens'
-    },
-    {
-      id: 7,
-      name: ' Bottles Dropping Amber ',
-      category: 'Bottle',
-      price: '₹249',
-      image: 'https://omsonslabs.com/wp-content/uploads/Bottles-Dropping-Amber-product-image.webp',
-      description: 'Made from heat resistant Boro 3.3 Glass.',
-      link: '/product/zenith-keyboard'
-    },
-    {
-      id: 8,
-      name: 'Bottles Reagent Clear Glass with PE Screw Cap ',
-      category: 'Bottle',
-      price: '₹99',
-      image: 'https://omsonslabs.com/wp-content/uploads/Bottles-Reagent-Clear-Glass-with-PE-Screw-Cap-product-image.webp',
-      description: 'Complies with DIN/ISO 4796.',
-      link: '/product/orbit-ring'
-    }
-  ];
+  useEffect(() => {
+    axios
+      .get("data/nested_products.json")
+      .then((res) => {
+        setAllData(res.data);
+        setLoading(false);
+      })
+      .catch((e) => {
+        console.error("FETCH ERROR:", e);
+        setLoading(false);
+      });
+  }, []);
 
-  const deals = [
-    { label: 'Today\'s Deals', value: 'today' },
-    { label: 'Best Sellers', value: 'bestsellers' },
-    { label: 'New Arrivals', value: 'new' },
-    { label: 'Discounts on Sale', value: 'discount' }
-  ];
+
+  const totalPages = Math.ceil(allData.length / PAGE_SIZE);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const displayed = allData.slice(start, start + PAGE_SIZE);
 
   const toggleCategory = (category: string) => {
-    setSelectedCategories(prev =>
+    setSelectedCategories((prev) =>
       prev.includes(category)
-        ? prev.filter(c => c !== category)
+        ? prev.filter((c) => c !== category)
         : [...prev, category]
     );
   };
 
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
+  const getPaginationRange = () => {
+    const delta = 2;
+    const range: (number | "...")[] = [];
+
+    const left = Math.max(2, currentPage - delta);
+    const right = Math.min(totalPages - 1, currentPage + delta);
+
+    range.push(1);
+    if (left > 2) range.push("...");
+    for (let i = left; i <= right; i++) range.push(i);
+    if (right < totalPages - 1) range.push("...");
+    if (totalPages > 1) range.push(totalPages);
+
+    return range;
+  };
+
+
   return (
     <div className="min-h-screen bg-white">
+
+      {/* HEADER */}
       <header className="bg-white text-black py-2 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 flex justify-between">
-          <h1 className="text-4xl font-light tracking-tight mb-2">Featured Products</h1>
-         <div className='my-auto'>
-         <select className="text-sm text-black border rounded-sm py-1 px-3">
-            <option>Featured</option>
-            <option>Price: Low to High</option>
-            <option>Price: High to Low</option>
-            <option>Avg. Customer Review</option>
-            <option>Newest Arrivals</option>
-            <option>Best Sellers</option>
-          </select>
-         </div>
+          <h1 className="text-4xl font-light tracking-tight mb-2">
+            Featured Products
+          </h1>
+          <div className="my-auto">
+            <select className="text-sm text-black border rounded-sm py-1 px-3">
+              <option>Featured</option>
+              <option>Price: Low to High</option>
+              <option>Price: High to Low</option>
+              <option>Newest Arrivals</option>
+              <option>Best Sellers</option>
+            </select>
+          </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* CONTENT */}
+      <div className="max-w-7xl mx-auto px-4 py-8 text-black">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+          {/* SIDEBAR */}
           <aside className="lg:col-span-1">
             <div className="space-y-6 sticky top-4">
+
+              {/* PRICE */}
               <div className="border-b border-gray-200 pb-6">
-                <h3 className="font-semibold text-gray-900 text-sm mb-4">Price</h3>
-                <div className="space-y-3">
-                  <div>
+                <h3 className="font-semibold text-sm mb-4">Price</h3>
+                <input
+                  type="range"
+                  min="0"
+                  max="2000"
+                  value={priceRange[1]}
+                  onChange={(e) =>
+                    setPriceRange([priceRange[0], parseInt(e.target.value)])
+                  }
+                  className="w-full accent-amber-400"
+                />
+                <div className="flex justify-between text-xs mt-2">
+                  <span>₹{priceRange[0]}</span>
+                  <span>₹{priceRange[1]}</span>
+                </div>
+              </div>
+
+              {/* CATEGORY */}
+              <div className="border-b border-gray-200 pb-6">
+                <h3 className="font-semibold text-sm mb-4">Categories</h3>
+                {["Bottle"].map((category) => (
+                  <label key={category} className="flex items-center mb-2">
                     <input
-                      type="range"
-                      min="0"
-                      max="2000"
-                      value={priceRange[1]}
-                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                      className="w-full h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                      type="checkbox"
+                      checked={selectedCategories.includes(category)}
+                      onChange={() => toggleCategory(category)}
                     />
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-gray-600">
-                    <span>₹{priceRange[0]}</span>
-                    <span>to ₹{priceRange[1]}</span>
-                  </div>
-                  
-                </div>
+                    <span className="ml-2 text-sm">{category}</span>
+                  </label>
+                ))}
               </div>
 
-              <div className="border-b border-gray-200 pb-6">
-                <h3 className="font-semibold text-gray-900 text-sm mb-4">Categories</h3>
-                <div className="space-y-3">
-                  {['Bottle'].map((category) => (
-                    <label key={category} className="flex items-center cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category)}
-                        onChange={() => toggleCategory(category)}
-                        className="w-4 h-4 rounded border-gray-300 text-slate-900 focus:ring-2 focus:ring-amber-400 cursor-pointer"
-                      />
-                      <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
-                        {category}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="pb-6">
-                <h3 className="font-semibold text-gray-900 text-sm mb-4">Offers & Deals</h3>
-                <div className="space-y-3">
-                  {deals.map((deal) => (
-                    <label key={deal.value} className="flex items-center cursor-pointer group">
-                      <input
-                        type="radio"
-                        name="deals"
-                        checked={selectedDeal === deal.value}
-                        onChange={() => setSelectedDeal(deal.value)}
-                        className="w-4 h-4 border-gray-300 text-slate-900 focus:ring-2 focus:ring-amber-400 cursor-pointer"
-                      />
-                      <span className="ml-3 text-sm text-gray-700 group-hover:text-gray-900">
-                        {deal.label}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
+              {/* DEALS */}
               <div>
-                <button
-                  onClick={() => {
-                    setPriceRange([0, 2000]);
-                    setSelectedCategories([]);
-                    setSelectedDeal(null);
-                  }}
-                  className="w-full py-2 text-xs font-medium text-slate-900 border border-slate-300 rounded hover:bg-slate-50 transition"
-                >
-                  Clear all filters
-                </button>
+                <h3 className="font-semibold text-sm mb-4">Deals</h3>
+                {deals.map((deal) => (
+                  <label key={deal.value} className="flex items-center mb-2">
+                    <input
+                      type="radio"
+                      checked={selectedDeal === deal.value}
+                      onChange={() => setSelectedDeal(deal.value)}
+                    />
+                    <span className="ml-2 text-sm">{deal.label}</span>
+                  </label>
+                ))}
               </div>
+
+              <button
+                onClick={() => {
+                  setPriceRange([0, 2000]);
+                  setSelectedCategories([]);
+                  setSelectedDeal(null);
+                }}
+                className="w-full py-2 text-xs border mt-4"
+              >
+                Clear Filters
+              </button>
             </div>
           </aside>
 
+          {/* PRODUCTS GRID */}
           <main className="lg:col-span-4">
+
+            {loading && (
+              <p className="text-gray-400 text-sm">Loading products...</p>
+            )}
+
+            {/* RESULT COUNT */}
+            {!loading && (
+              <p className="text-xs text-gray-500 mb-4">
+                Showing {start + 1}–{Math.min(start + PAGE_SIZE, allData.length)} of{" "}
+                {allData.length} products
+              </p>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <Link
-                  key={product.id}
-                  href={product.link}
-                  className="group flex flex-col bg-white rounded shadow-sm hover:shadow-md transition-shadow duration-200"
-                  onMouseEnter={() => setHoveredId(product.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                >
-                  <div className="relative overflow-hidden bg-gray-100 rounded-t flex-shrink-0">
+              {displayed.map((product) => (
+                <div key={product.SKU} className="group flex flex-col bg-white rounded shadow-sm hover:shadow-md transition p-2">
+                  <Link
+                    href={`/Products/${product.SKU}`}
+
+                  >
                     <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full aspect-square object-cover group-hover:opacity-90 transition-opacity duration-200"
+                      src={image}
+                      alt={product.Name}
+                      className="w-full aspect-square object-cover hover:underline"
+                      loading="lazy"
                     />
-                    <div className="absolute top-3 left-3 bg-slate-900 text-white text-xs font-medium px-2.5 py-1 rounded">
-                      {product.category}
-                    </div>
-                  </div>
+                    <div className="p-4 flex flex-col flex-1">
+                      <h3 className="font-semibold mb-2">{product.Name}</h3>
+                      {/* <div
+                        dangerouslySetInnerHTML={{ __html: product["Short description"].replace(/<br>\\n/g, "") }}
+                      /> */}
 
-                  <div className="flex-1 flex flex-col p-4">
-                    <h3 className="text-base font-semibold text-gray-900 mb-1 line-clamp-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4 flex-1 line-clamp-2">
-                      {product.description}
-                    </p>
-
-                    <div className="flex flex-col justify-between pt-3 border-t text-left border-gray-100">
-                      <span className="text-lg font-semibold text-gray-900 ">
-                        {product.price}
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                        }}
-                        className="text-xs font-medium text-white hover:text-amber-700 transition bg-yellow-500 h-8 w-22 rounded-2xl"
-                      >
-                        Add to Cart 
-                      </button>
                     </div>
+                  </Link>
+                  <div className='flex'>
+                    <AddToCart product={product.Name} quantity={1} />
+
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
+
+            {/* PAGINATION */}
+            {!loading && totalPages > 1 && (
+              <div className="flex items-center justify-center ml-auto gap-1 mt-10">
+
+                {/* Prev */}
+                <button
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 text-sm border rounded disabled:opacity-30 hover:bg-gray-50 transition h-10 w-19"
+                >
+                  ‹ Prev
+                </button>
+
+                {/* Page numbers */}
+                {getPaginationRange().map((item, idx) =>
+                  item === "..." ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-gray-400 text-sm select-none w-10">
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      onClick={() => goToPage(item as number)}
+                      className={`w-10 h-10 text-sm rounded border transition ${currentPage === item
+                          ? "bg-yellow-500 text-white border-yellow-500 font-semibold"
+                          : "hover:bg-gray-50"
+                        }`}
+                    >
+                      {item}
+                    </button>
+                  )
+                )}
+
+                {/* Next */}
+                <button
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 text-sm border rounded disabled:opacity-30 hover:bg-gray-50 transition h-10 w-19 "
+                >
+                  Next ›
+                </button>
+              </div>
+            )}
+
           </main>
         </div>
       </div>
-
-      <section className="bg-gray-50 border-t border-gray-200 py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h2 className="text-2xl font-light text-gray-900 mb-4">Explore More</h2>
-          <Link
-            href="/products"
-            className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-medium rounded hover:bg-slate-800 transition"
-          >
-            View All Products
-          </Link>
-        </div>
-      </section>
     </div>
   );
-}
+} 

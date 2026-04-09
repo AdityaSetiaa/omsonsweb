@@ -41,7 +41,7 @@ export const bottleProducts = [
 
 export const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Products", href: "/products" },
+  { label: "Products", href: "/Products" },
   { label: "Glassware", href: "/category/glassware" },
   { label: "ISI Marked", href: "/category/isi-marked" },
   { label: "Filters", href: "/category/filters" },

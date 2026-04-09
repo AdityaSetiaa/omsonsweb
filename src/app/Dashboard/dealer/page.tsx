@@ -144,18 +144,27 @@ export default function DealerDashboard() {
           );
           console.log("[orders] raw data:", data);
 
-          // handle both { data: [...] } and direct array
-          const rows: any[] = Array.isArray(data) ? data : (data?.data ?? []);
-          console.log("[orders] rows:", rows);
+          // API returns { month: [...], total: [...], msg: "...", status: true }
+          if (data?.month && data?.total) {
+            const months = Array.isArray(data.month) ? data.month : Object.values(data.month || {});
+            const totals = Array.isArray(data.total) ? data.total : Object.values(data.total || {});
+            
+            console.log("[orders] months:", months, "totals:", totals);
 
-          if (rows.length > 0) {
-            // normalise field names — API might use different casing
-            const normalised: MonthlyData[] = rows.map((r: any) => ({
-              month:       r.month       ?? r.Month       ?? r.MONTH       ?? "—",
-              totalorders: Number(r.totalorders ?? r.total_orders ?? r.TotalOrders ?? r.count ?? 0),
-              totalvalue:  Number(r.totalvalue  ?? r.total_value  ?? r.TotalValue  ?? 0),
-            }));
-            setMonthlyOrders(normalised);
+            if (months.length > 0 && totals.length > 0) {
+              const normalised: MonthlyData[] = months.map((m: any, idx: number) => {
+                const val = parseInt(String(totals[idx] || 0), 10);
+                return {
+                  month: String(m).trim(),
+                  totalorders: isNaN(val) ? 0 : val,
+                  totalvalue: 0,
+                };
+              });
+              console.log("[orders] normalised:", normalised);
+              setMonthlyOrders(normalised);
+            }
+          } else {
+            console.warn("[orders] Missing month or total in data:", data);
           }
         } catch (err) { console.error("[orders] fetch error:", err); }
 
@@ -167,23 +176,35 @@ export default function DealerDashboard() {
           );
           console.log("[values] raw data:", data);
 
-          const rows: any[] = Array.isArray(data) ? data : (data?.data ?? []);
-          console.log("[values] rows:", rows);
+          // API returns { month: [...], total: [...], msg: "...", status: true }
+          if (data?.month && data?.total) {
+            const months = Array.isArray(data.month) ? data.month : Object.values(data.month || {});
+            const totals = Array.isArray(data.total) ? data.total : Object.values(data.total || {});
+            
+            console.log("[values] months:", months, "totals:", totals);
 
-          if (rows.length > 0) {
-            const normalised: MonthlyData[] = rows.map((r: any) => ({
-              month:       r.month       ?? r.Month       ?? r.MONTH       ?? "—",
-              totalorders: Number(r.totalorders ?? r.total_orders ?? r.TotalOrders ?? 0),
-              totalvalue:  Number(r.totalvalue  ?? r.total_value  ?? r.TotalValue  ?? r.value ?? 0),
-            }));
-            setMonthlyValues(normalised);
+            if (months.length > 0 && totals.length > 0) {
+              const normalised: MonthlyData[] = months.map((m: any, idx: number) => {
+                const val = parseInt(String(totals[idx] || 0), 10);
+                return {
+                  month: String(m).trim(),
+                  totalorders: 0,
+                  totalvalue: isNaN(val) ? 0 : val,
+                };
+              });
+              console.log("[values] normalised:", normalised);
+              setMonthlyValues(normalised);
+            }
+          } else {
+            console.warn("[values] Missing month or total in data:", data);
           }
         } catch (err) { console.error("[values] fetch error:", err); }
 
         // ── Funnel ──
         try {
           const funnelData = await safeFetch(
-            `https://mirisoft.co.in/sas/dealerapi/api/getfunnel?id=${dealerId}`
+            `https://mirisoft.co.in/sas/dealerapi/api/getfunnel?id=${dealerId}`,
+            { method: "GET" }
           );
           console.log("[funnel] raw data:", funnelData);
 
