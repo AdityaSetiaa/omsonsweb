@@ -63,8 +63,15 @@ export default function Login() {
         setEmail("")
         setPassword("")
         setRoletype("")
-
-        router.push("/home")
+        if(roletype === "1"){
+          router.push("/dashboard/staff")
+        }
+        else if(roletype === "2"){
+          router.push("/home")
+        }
+        else if(roletype === "3"){
+          router.push("/dashboard/admin")
+        }
       } else {
         setError(data?.msg || "Login failed")
       }

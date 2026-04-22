@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Footer from "@/Components/Footer";
-import Header from "@/Components/Header";
+import Footer from "@/components/Footer";
+import Header from "@/components/Header";
 import Providers from './providers'
+import Sidebar from "@/components/layout/Sidebar";
 import ReactQueryProvider from "@/app/providers/ReactQueryproviders";
 import Cart from "./Pages/Cart/page";
 
@@ -31,11 +32,11 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-           <ReactQueryProvider>
+        <ReactQueryProvider>
           {children}
         </ReactQueryProvider>
       </body>
-      
+
     </html>
   );
 }

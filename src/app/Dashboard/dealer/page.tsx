@@ -5,69 +5,30 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { CiSearch } from "react-icons/ci";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 type DealerData = {
-  Dealer_Id: string;
-  Dealer_Name: string;
-  Dealer_Email: string;
-  Dealer_Number: string;
-  Dealer_City: string;
-  Dealer_Address: string;
-  Dealer_Pincode: string;
-  Dealer_Dealercode: string;
-  Dealer_Image: string;
-  annualtarget: string;
-  currentlimit: string;
-  creditdays: string;
-  discount: string;
-  gst: string;
-  status: string;
-  assignedstaff: string;
-  staffname: string;
-  Dealer_shipto: string;
+  Dealer_Id: string; Dealer_Name: string; Dealer_Email: string; Dealer_Number: string;
+  Dealer_City: string; Dealer_Address: string; Dealer_Pincode: string;
+  Dealer_Dealercode: string; Dealer_Image: string; annualtarget: string;
+  currentlimit: string; creditdays: string; discount: string;
+  gst: string; status: string; assignedstaff: string; staffname: string; Dealer_shipto: string;
 };
 
-type MonthlyData = {
-  month: string;
-  totalorders: number;
-  totalvalue: number;
-};
-
-type FunnelStage = {
-  label: string;
-  value: number;
-  pct: number;
-  color: string;
-};
+type MonthlyData = { month: string; totalorders: number; totalvalue: number };
+type FunnelStage = { label: string; value: number; pct: number; color: string };
 
 const EMPTY_DEALER: DealerData = {
   Dealer_Id: "", Dealer_Name: "", Dealer_Email: "", Dealer_Number: "",
-  Dealer_City: "", Dealer_Address: "", Dealer_Pincode: "",
-  Dealer_Dealercode: "", Dealer_Image: "", annualtarget: "0",
-  currentlimit: "0", creditdays: "0", discount: "0",
-  gst: "", status: "0", assignedstaff: "", staffname: "", Dealer_shipto: "",
+  Dealer_City: "", Dealer_Address: "", Dealer_Pincode: "", Dealer_Dealercode: "",
+  Dealer_Image: "", annualtarget: "0", currentlimit: "0", creditdays: "0",
+  discount: "0", gst: "", status: "0", assignedstaff: "", staffname: "", Dealer_shipto: "",
 };
 
 const logoImage = "http://sapoms.com/images/Omsons%20-%20White.png";
 
 const NAV_ITEMS = [
-  {
-    label: "Home", href: "/home",
-    icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-        <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-      </svg>
-    ),
-  },
-  {
-    label: "Add Order", href: "/Pages/AddOrderForm",
-    icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 5v14M5 12h14"/>
-      </svg>
-    ),
-  },
+  { label: "Home",      href: "/home",               icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
+  { label: "Add Order", href: "/Pages/AddOrderForm",  icon: <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg> },
 ];
 
 function fmtCurrency(n: number) {
@@ -75,43 +36,61 @@ function fmtCurrency(n: number) {
   if (n >= 1_000)     return `₹${(n / 1_000).toFixed(1)}K`;
   return `₹${n}`;
 }
-
 function fmtNum(n: number) {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000)     return `${(n / 1_000).toFixed(0)}K`;
   return String(n);
 }
 
-// ── Safe JSON fetch — tries direct parse first, then strips PHP noise ─────────
 async function safeFetch(url: string, options: RequestInit = {}) {
   const res  = await fetch(url, options);
   const text = await res.text();
-  console.log(`[safeFetch] ${url}`, text.slice(0, 300));
-
-  // 1. Try direct parse
-  try { return JSON.parse(text); } catch (_) { /* continue */ }
-
-  // 2. Strip leading PHP warnings / BOM and try again
+  try { return JSON.parse(text); } catch (_) {}
   const cleaned = text.replace(/^[\s\S]*?(\{|\[)/, (_, ch) => ch);
-  try { return JSON.parse(cleaned); } catch (_) { /* continue */ }
-
-  // 3. Regex grab last JSON blob
+  try { return JSON.parse(cleaned); } catch (_) {}
   const match = text.match(/(\{[\s\S]*\}|\[[\s\S]*\])(?=[^}\]]*$)/);
-  if (match) {
-    try { return JSON.parse(match[0]); } catch (_) { /* fall through */ }
-  }
+  if (match) { try { return JSON.parse(match[0]); } catch (_) {} }
+  throw new Error(`Could not parse response from ${url}`);
+}
 
-  throw new Error(`[safeFetch] Could not parse response from ${url}: ${text.slice(0, 200)}`);
+// ── Normalise the { month: [...], total: [...] } shape the API returns ────────
+function normaliseMonthlyResponse(data: any, valueKey: "orders" | "value"): MonthlyData[] {
+  if (!data) return [];
+
+  const months: any[] = Array.isArray(data.month)
+    ? data.month
+    : Array.isArray(data.months)
+    ? data.months
+    : Object.values(data.month ?? data.months ?? {});
+
+  const totals: any[] = Array.isArray(data.total)
+    ? data.total
+    : Array.isArray(data.totals)
+    ? data.totals
+    : Object.values(data.total ?? data.totals ?? {});
+
+  if (!months.length || !totals.length) return [];
+
+  return months.map((m: any, idx: number) => {
+    const raw = parseFloat(String(totals[idx] ?? 0));
+    const val = isNaN(raw) ? 0 : raw;
+    return {
+      month:       String(m).trim(),
+      totalorders: valueKey === "orders" ? val : 0,
+      totalvalue:  valueKey === "value"  ? val : 0,
+    };
+  });
 }
 
 export default function DealerDashboard() {
   const router   = useRouter();
   const pathname = usePathname();
 
+  // Chart refs — one per canvas, one per Chart.js instance
   const barRef   = useRef<HTMLCanvasElement | null>(null);
-  const barInst  = useRef<any>(null);
+  const barChart = useRef<any>(null);
   const lineRef  = useRef<HTMLCanvasElement | null>(null);
-  const lineInst = useRef<any>(null);
+  const lineChart = useRef<any>(null);
 
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
   const [loading,       setLoading]       = useState(true);
@@ -120,11 +99,11 @@ export default function DealerDashboard() {
   const [monthlyValues, setMonthlyValues] = useState<MonthlyData[]>([]);
   const [funnel,        setFunnel]        = useState<FunnelStage[]>([]);
 
-  // ── Load data ───────────────────────────────────────────────────────────────
+  // ── Data fetch ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const loadDealerData = async () => {
+    (async () => {
       try {
         const raw    = localStorage.getItem("UserData") || localStorage.getItem("user") || "{}";
         const parsed: DealerData = JSON.parse(raw);
@@ -133,119 +112,63 @@ export default function DealerDashboard() {
         const dealerId = parsed.Dealer_Id;
         if (!dealerId) { setLoading(false); return; }
 
-        const formData = new FormData();
-        formData.append("dealer_id", dealerId);
+        const fd = new FormData();
+        fd.append("id", dealerId);  // ← was "dealer_id", endpoints expect "id"
 
-        // ── Monthly Orders ──
-        try {
-          const data = await safeFetch(
-            "https://mirisoft.co.in/sas/dealerapi/api/getMonthlyreporttotalorderdealer",
-            { method: "POST", body: formData }
-          );
-          console.log("[orders] raw data:", data);
+        // Run all three fetches in parallel
+        const [ordersData, valuesData] = await Promise.allSettled([
+          safeFetch("https://mirisoft.co.in/sas/dealerapi/api/getMonthlyreporttotalorderdealer", { method: "POST", body: fd }),
+          safeFetch("https://mirisoft.co.in/sas/dealerapi/api/getMonthlyreporttotalvaluedealer", { method: "POST", body: fd }),
+          safeFetch(`https://mirisoft.co.in/sas/dealerapi/api/getfunnel?id=${dealerId}`),
+        ]);
 
-          // API returns { month: [...], total: [...], msg: "...", status: true }
-          if (data?.month && data?.total) {
-            const months = Array.isArray(data.month) ? data.month : Object.values(data.month || {});
-            const totals = Array.isArray(data.total) ? data.total : Object.values(data.total || {});
-            
-            console.log("[orders] months:", months, "totals:", totals);
+        if (ordersData.status === "fulfilled") {
+          const rows = normaliseMonthlyResponse(ordersData.value, "orders");
+          console.log("[orders] parsed rows:", rows);
+          setMonthlyOrders(rows);
+        } else {
+          console.error("[orders] fetch failed:", ordersData.reason);
+        }
 
-            if (months.length > 0 && totals.length > 0) {
-              const normalised: MonthlyData[] = months.map((m: any, idx: number) => {
-                const val = parseInt(String(totals[idx] || 0), 10);
-                return {
-                  month: String(m).trim(),
-                  totalorders: isNaN(val) ? 0 : val,
-                  totalvalue: 0,
-                };
-              });
-              console.log("[orders] normalised:", normalised);
-              setMonthlyOrders(normalised);
-            }
-          } else {
-            console.warn("[orders] Missing month or total in data:", data);
-          }
-        } catch (err) { console.error("[orders] fetch error:", err); }
+        if (valuesData.status === "fulfilled") {
+          const rows = normaliseMonthlyResponse(valuesData.value, "value");
+          console.log("[values] parsed rows:", rows);
+          setMonthlyValues(rows);
+        } else {
+          console.error("[values] fetch failed:", valuesData.reason);
+        }
 
-        // ── Monthly Values ──
-        try {
-          const data = await safeFetch(
-            "https://mirisoft.co.in/sas/dealerapi/api/getMonthlyreporttotalvaluedealer",
-            { method: "POST", body: formData }
-          );
-          console.log("[values] raw data:", data);
-
-          // API returns { month: [...], total: [...], msg: "...", status: true }
-          if (data?.month && data?.total) {
-            const months = Array.isArray(data.month) ? data.month : Object.values(data.month || {});
-            const totals = Array.isArray(data.total) ? data.total : Object.values(data.total || {});
-            
-            console.log("[values] months:", months, "totals:", totals);
-
-            if (months.length > 0 && totals.length > 0) {
-              const normalised: MonthlyData[] = months.map((m: any, idx: number) => {
-                const val = parseInt(String(totals[idx] || 0), 10);
-                return {
-                  month: String(m).trim(),
-                  totalorders: 0,
-                  totalvalue: isNaN(val) ? 0 : val,
-                };
-              });
-              console.log("[values] normalised:", normalised);
-              setMonthlyValues(normalised);
-            }
-          } else {
-            console.warn("[values] Missing month or total in data:", data);
-          }
-        } catch (err) { console.error("[values] fetch error:", err); }
-
-        // ── Funnel ──
-        try {
-          const funnelData = await safeFetch(
-            `https://mirisoft.co.in/sas/dealerapi/api/getfunnel?id=${dealerId}`,
-            { method: "GET" }
-          );
-          console.log("[funnel] raw data:", funnelData);
-
-          const annual  = Number(parsed.annualtarget) || 0;
-          const current = Number(parsed.currentlimit) || 0;
-          setFunnel([
-            { label: "Annual Target", value: annual,  pct: 100, color: "#4f46e5" },
-            { label: "Current Limit", value: current, pct: annual > 0 ? Math.round((current / annual) * 100) : 0, color: "#6366f1" },
-          ]);
-        } catch (err) { console.error("[funnel] fetch error:", err); }
-
+        // Funnel from dealer data
+        const annual  = Number(parsed.annualtarget) || 0;
+        const current = Number(parsed.currentlimit)  || 0;
+        setFunnel([
+          { label: "Annual Target", value: annual,  pct: 100, color: "#4f46e5" },
+          { label: "Current Limit", value: current, pct: annual > 0 ? Math.round((current / annual) * 100) : 0, color: "#6366f1" },
+        ]);
       } catch (err) {
-        console.error("[loadDealerData] top-level error:", err);
+        console.error("[DealerDashboard] top-level error:", err);
       } finally {
         setLoading(false);
       }
-    };
-
-    loadDealerData();
+    })();
   }, []);
 
-  const annualTarget = Number(dealer.annualtarget) || 0;
-  const currentLimit = Number(dealer.currentlimit) || 0;
-  const creditDays   = Number(dealer.creditdays)   || 0;
-  const discountPct  = Number(dealer.discount)     || 0;
-  const outstanding  = currentLimit;
-  const usagePct     = annualTarget > 0 ? Math.min(100, Math.round((currentLimit / annualTarget) * 100)) : 0;
-  const initials     = dealer.Dealer_Name?.trim()?.charAt(0)?.toUpperCase() || dealer.Dealer_Email?.trim()?.charAt(0)?.toUpperCase() || "D";
-
-  // ── Bar chart — Monthly Orders ──────────────────────────────────────────────
   useEffect(() => {
-    if (loading) return;
-    if (monthlyOrders.length === 0) return;
+    if (loading || monthlyOrders.length === 0) return;
 
-    let alive = true;
-    (async () => {
+    // rAF ensures the canvas element is painted into the DOM before Chart.js accesses it
+    const raf = requestAnimationFrame(async () => {
+      if (!barRef.current) return;
       const { default: Chart } = await import("chart.js/auto");
-      if (!alive || !barRef.current) return;
-      barInst.current?.destroy();
 
-      barInst.current = new Chart(barRef.current, {
+      if (barChart.current) {
+        barChart.current.data.labels = monthlyOrders.map(m => m.month);
+        barChart.current.data.datasets[0].data = monthlyOrders.map(m => m.totalorders);
+        barChart.current.update("active");
+        return;
+      }
+
+      barChart.current = new Chart(barRef.current, {
         type: "bar",
         data: {
           labels:   monthlyOrders.map(m => m.month),
@@ -256,7 +179,7 @@ export default function DealerDashboard() {
             hoverBackgroundColor: "#4f46e5",
             borderRadius: 7,
             borderSkipped: false,
-            barPercentage:      0.58,
+            barPercentage: 0.58,
             categoryPercentage: 0.68,
           }],
         },
@@ -268,7 +191,7 @@ export default function DealerDashboard() {
             tooltip: {
               backgroundColor: "#1e1b4b", titleColor: "#c7d2fe", bodyColor: "#e0e7ff",
               padding: 10, cornerRadius: 8,
-              callbacks: { label: (ctx) => ` Orders: ${ctx.raw}` },
+              callbacks: { label: ctx => ` Orders: ${ctx.raw}` },
             },
           },
           scales: {
@@ -277,37 +200,43 @@ export default function DealerDashboard() {
           },
         },
       });
-    })();
-    return () => { alive = false; barInst.current?.destroy(); };
+    });
+    return () => cancelAnimationFrame(raf);
   }, [loading, monthlyOrders]);
 
-  // ── Line chart — Monthly Values ─────────────────────────────────────────────
+  // Destroy bar chart only on unmount
+  useEffect(() => () => { barChart.current?.destroy(); }, []);
+
   useEffect(() => {
-    if (loading) return;
-    if (monthlyValues.length === 0) return;
+    if (loading || monthlyValues.length === 0) return;
 
-    let alive = true;
-    (async () => {
+    const raf = requestAnimationFrame(async () => {
+      if (!lineRef.current) return;
       const { default: Chart } = await import("chart.js/auto");
-      if (!alive || !lineRef.current) return;
-      lineInst.current?.destroy();
 
-      lineInst.current = new Chart(lineRef.current, {
+      if (lineChart.current) {
+        lineChart.current.data.labels = monthlyValues.map(m => m.month);
+        lineChart.current.data.datasets[0].data = monthlyValues.map(m => m.totalvalue);
+        lineChart.current.update("active");
+        return;
+      }
+
+      lineChart.current = new Chart(lineRef.current, {
         type: "line",
         data: {
           labels:   monthlyValues.map(m => m.month),
           datasets: [{
             label: "Total Value (₹)",
             data:  monthlyValues.map(m => m.totalvalue),
-            borderColor:     "#f59e0b",
-            backgroundColor: "rgba(245,158,11,0.17)",
-            tension:         0.44,
-            fill:            true,
-            pointRadius:     3,
+            borderColor:          "#f59e0b",
+            backgroundColor:      "rgba(245,158,11,0.17)",
+            tension:              0.44,
+            fill:                 true,
+            pointRadius:          3,
             pointBackgroundColor: "#f59e0b",
-            pointBorderColor:    "#fff",
-            pointBorderWidth:    2,
-            borderWidth:         2.5,
+            pointBorderColor:     "#fff",
+            pointBorderWidth:     2,
+            borderWidth:          2.5,
           }],
         },
         options: {
@@ -318,21 +247,32 @@ export default function DealerDashboard() {
             tooltip: {
               backgroundColor: "#0f0e17", titleColor: "#e0e7ff", bodyColor: "#c7d2fe",
               padding: 12, cornerRadius: 10,
-              callbacks: { label: (ctx) => ` ₹${(ctx.raw as number).toLocaleString("en-IN")}` },
+              callbacks: { label: ctx => ` ₹${(ctx.raw as number).toLocaleString("en-IN")}` },
             },
           },
           scales: {
             x: { grid: { display: false }, ticks: { color: "#9ca3af", font: { size: 10 } }, border: { display: false } },
             y: {
               grid: { color: "rgba(156,163,175,0.13)" }, border: { display: false },
-              ticks: { color: "#9ca3af", font: { size: 11 }, callback: (v) => `₹${Number(v).toLocaleString("en-IN")}` },
+              ticks: { color: "#9ca3af", font: { size: 11 }, callback: v => `₹${Number(v).toLocaleString("en-IN")}` },
             },
           },
         },
       });
-    })();
-    return () => { alive = false; lineInst.current?.destroy(); };
+    });
+    return () => cancelAnimationFrame(raf);
   }, [loading, monthlyValues]);
+
+  // Destroy line chart only on unmount
+  useEffect(() => () => { lineChart.current?.destroy(); }, []);
+
+  const annualTarget = Number(dealer.annualtarget) || 0;
+  const currentLimit = Number(dealer.currentlimit)  || 0;
+  const creditDays   = Number(dealer.creditdays)    || 0;
+  const discountPct  = Number(dealer.discount)      || 0;
+  const outstanding  = currentLimit;
+  const usagePct     = annualTarget > 0 ? Math.min(100, Math.round((currentLimit / annualTarget) * 100)) : 0;
+  const initials     = dealer.Dealer_Name?.trim()?.charAt(0)?.toUpperCase() || dealer.Dealer_Email?.trim()?.charAt(0)?.toUpperCase() || "D";
 
   const handleLogout = () => { localStorage.clear(); router.push("/auth/login"); };
 
@@ -344,14 +284,7 @@ export default function DealerDashboard() {
         html, body { font-family: 'DM Sans', sans-serif; }
         .root { min-height: 100vh; background: #f0f2f5; color: #111827; font-family: 'DM Sans', sans-serif; }
 
-        /* ── Sidebar ── */
-        .sidebar {
-          position: fixed; top: 0; left: 0; bottom: 0; width: 256px; z-index: 40;
-          background: #0d0c16; display: flex; flex-direction: column;
-          transform: translateX(-100%);
-          transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
-          will-change: transform;
-        }
+        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 256px; z-index: 40; background: #0d0c16; display: flex; flex-direction: column; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1); will-change: transform; }
         .sidebar.open { transform: translateX(0); }
         .sb-user { margin: 18px 14px 0; padding: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; }
         .sb-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#6366f1,#a78bfa); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 8px; }
@@ -366,28 +299,22 @@ export default function DealerDashboard() {
         .sb-logout { width: 100%; padding: 9px 14px; border-radius: 11px; background: transparent; border: 1px solid rgba(255,255,255,0.09); font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; font-family: inherit; transition: all .16s; }
         .sb-logout:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.28); color: #f87171; }
 
-        /* ── Overlay ── */
         .overlay { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); opacity: 0; pointer-events: none; transition: opacity .28s; }
         .overlay.show { opacity: 1; pointer-events: all; }
 
-        /* ── Topbar ── */
         .topbar { position: sticky; top: 0; z-index: 20; height: 62px; padding: 0 22px; background: linear-gradient(to right,#1f4b8d,#0d0c16); border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; gap: 12px; }
         .hamburger { flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; transition: background .15s; }
         .hamburger:hover { background: rgba(255,255,255,0.12); }
         .topbar-title { font-size: 15px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .topbar-sub   { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 1px; }
-
-        /* search */
         .search-wrap { flex: 1; max-width: 480px; margin: 0 16px; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.13); border-radius: 10px; padding: 0 12px; height: 38px; }
         .search-wrap svg { color: rgba(255,255,255,0.45); flex-shrink: 0; }
         .search-input { background: transparent; border: none; outline: none; font-size: 13.5px; color: #fff; flex: 1; font-family: 'DM Sans', sans-serif; }
         .search-input::placeholder { color: rgba(255,255,255,0.35); }
 
-        /* ── Content ── */
         .content { padding: 24px 22px; max-width: 1440px; margin: 0 auto; }
         .page-heading { font-size: 20px; font-weight: 600; color: #111827; padding: 18px 22px 0; }
 
-        /* ── Info cards ── */
         .info-cards { display: grid; grid-template-columns: repeat(auto-fill,minmax(200px,1fr)); gap: 14px; margin-bottom: 20px; }
         .icard { background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 18px 20px; transition: box-shadow .2s, transform .2s; }
         .icard:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.07); transform: translateY(-2px); }
@@ -400,30 +327,24 @@ export default function DealerDashboard() {
         .badge-amber  { background: #fef3c7; color: #b45309; }
         .badge-blue   { background: #dbeafe; color: #1d4ed8; }
 
-        /* ── Charts row ── */
         .charts-row { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 16px; }
         @media (min-width: 900px) { .charts-row { grid-template-columns: 1fr 1fr; } }
         .bottom-row { display: grid; grid-template-columns: 1fr; gap: 16px; }
         @media (min-width: 900px) { .bottom-row { grid-template-columns: 1fr 1fr; } }
 
-        /* ── Panel ── */
         .panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 22px; }
         .panel-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
         .panel-title  { font-size: 13.5px; font-weight: 600; color: #111827; }
         .panel-sub    { font-size: 11.5px; color: #9ca3af; margin-top: 2px; }
 
-        /* ── Chart canvas wrapper — CRITICAL: must be position:relative with explicit height ── */
+        /* CRITICAL — chart canvas wrapper must be position:relative with explicit height */
         .chart-wrap { position: relative; width: 100%; height: 260px; }
 
-        /* Legend */
         .legend { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .leg     { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #6b7280; }
         .leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-        /* Empty / loading placeholder */
         .chart-empty { display: flex; align-items: center; justify-content: center; height: 260px; color: #9ca3af; font-size: 13px; }
 
-        /* ── Outstanding ── */
         .outstanding-block   { padding: 10px 0; }
         .outstanding-amount  { font-size: 42px; font-weight: 700; color: #111827; font-family: 'DM Mono', monospace; letter-spacing: -.05em; line-height: 1; }
         .outstanding-sub     { font-size: 13px; color: #6b7280; margin-top: 8px; }
@@ -434,7 +355,6 @@ export default function DealerDashboard() {
         .credit-meta         { margin-top: 14px; display: flex; gap: 12px; flex-wrap: wrap; }
         .credit-chip         { padding: 4px 11px; border-radius: 20px; font-size: 11px; font-weight: 500; }
 
-        /* ── Funnel ── */
         .funnel-body { display: flex; flex-direction: column; gap: 7px; align-items: center; }
         .funnel-row  { display: flex; align-items: center; gap: 10px; width: 100%; }
         .funnel-lbl  { font-size: 11.5px; font-weight: 500; color: #374151; width: 90px; text-align: right; flex-shrink: 0; }
@@ -447,14 +367,13 @@ export default function DealerDashboard() {
         .at-val { font-size: 22px; font-weight: 700; color: #6d28d9; font-family: 'DM Mono', monospace; letter-spacing: -.04em; }
 
         .loading-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
       `}</style>
 
       <div className="root">
-        {/* Overlay */}
         <div className={`overlay${sidebarOpen ? " show" : ""}`} onClick={() => setSidebarOpen(false)} aria-hidden="true" />
 
-        {/* ── Sidebar ── */}
+        {/* Sidebar */}
         <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="sb-user">
             <div className="sb-avatar">{loading ? "…" : initials}</div>
@@ -474,37 +393,12 @@ export default function DealerDashboard() {
           </div>
         </aside>
 
-        {/* ── Main ── */}
         <div className="main">
-
-          {/* Topbar */}
-          <header className="topbar">
-            <button className="hamburger" onClick={() => setSidebarOpen(v => !v)} aria-label="Toggle sidebar">
-              {sidebarOpen
-                ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                : <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-              }
-            </button>
-
-            <img src={logoImage} alt="Logo" style={{ height: 44, flexShrink: 0 }} />
-
-            <div style={{ minWidth: 0 }}>
-              <div className="topbar-title">{loading ? "Dashboard" : `Welcome, ${dealer.Dealer_Name || "Dealer"}`}</div>
-              {dealer.Dealer_City && <div className="topbar-sub">{dealer.Dealer_City}</div>}
-            </div>
-
-            {/* Search */}
-            <div className="search-wrap">
-              <CiSearch size={18} />
-              <input type="text" placeholder="Search…" className="search-input" />
-            </div>
-          </header>
-
           <div className="page-heading">Dealer Dashboard</div>
 
           <main className="content">
 
-            {/* ── Info Cards ── */}
+            {/* Info Cards */}
             <div className="info-cards">
               <div className="icard">
                 <div className="icard-lbl">Annual Target</div>
@@ -532,10 +426,9 @@ export default function DealerDashboard() {
               </div>
             </div>
 
-            {/* ── Charts ── */}
+            {/* Charts */}
             <div className="charts-row">
 
-              {/* Order Details */}
               <div className="panel">
                 <div className="panel-header">
                   <div>
@@ -543,10 +436,7 @@ export default function DealerDashboard() {
                     <div className="panel-sub">Monthly order count</div>
                   </div>
                   <div className="legend">
-                    <span className="leg">
-                      <span className="leg-dot" style={{ background: "rgba(99,102,241,0.78)" }} />
-                      Total Orders
-                    </span>
+                    <span className="leg"><span className="leg-dot" style={{ background: "rgba(99,102,241,0.78)" }} />Total Orders</span>
                   </div>
                 </div>
                 {loading ? (
@@ -560,7 +450,6 @@ export default function DealerDashboard() {
                 )}
               </div>
 
-              {/* Sales Analysis */}
               <div className="panel">
                 <div className="panel-header">
                   <div>
@@ -568,10 +457,7 @@ export default function DealerDashboard() {
                     <div className="panel-sub">Monthly revenue trends</div>
                   </div>
                   <div className="legend">
-                    <span className="leg">
-                      <span className="leg-dot" style={{ background: "#f59e0b" }} />
-                      Revenue
-                    </span>
+                    <span className="leg"><span className="leg-dot" style={{ background: "#f59e0b" }} />Revenue</span>
                   </div>
                 </div>
                 {loading ? (
@@ -586,10 +472,9 @@ export default function DealerDashboard() {
               </div>
             </div>
 
-            {/* ── Bottom Row ── */}
+            {/* Bottom Row */}
             <div className="bottom-row">
 
-              {/* Outstanding */}
               <div className="panel">
                 <div className="panel-header">
                   <div>
@@ -613,7 +498,6 @@ export default function DealerDashboard() {
                 </div>
               </div>
 
-              {/* Sales Funnel */}
               <div className="panel">
                 <div className="panel-header">
                   <div>
@@ -622,7 +506,7 @@ export default function DealerDashboard() {
                   </div>
                 </div>
                 <div className="funnel-body">
-                  {funnel.length > 0 ? funnel.map((stage) => (
+                  {funnel.length > 0 ? funnel.map(stage => (
                     <div className="funnel-row" key={stage.label}>
                       <div className="funnel-lbl">{stage.label}</div>
                       <div className="funnel-bar-wrap">

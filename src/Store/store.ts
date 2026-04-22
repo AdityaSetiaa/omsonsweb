@@ -1,58 +1,81 @@
 import { create } from "zustand";
 
-type CartItem = {
+export type CartItem = {
   id: string;
   name: string;
-  price: number;
-  quantity: number;
+  price: number;     // per-pack discounted price
+  quantity: number;  // number of packs
+  packSize: number;  // units per pack
+  stock?: number;
 };
 
 type CartStore = {
   cart: CartItem[];
-
-  addToCart: (item: Omit<CartItem, "quantity">) => void;
+  addToCart: (item: Omit<CartItem, "quantity"> & { initialQty?: number }) => void;
   removeFromCart: (id: string) => void;
+  incrementQty: (id: string) => void;
+  decrementQty: (id: string) => void;
   clearCart: () => void;
-
-  totalItems: () => number;
-  totalPrice: () => number;
 };
 
-export const useCartStore = create<CartStore>((set, get) => ({
+export const useCartStore = create<CartStore>((set) => ({
   cart: [],
 
   addToCart: (item) =>
     set((state) => {
       const existing = state.cart.find((i) => i.id === item.id);
+      const addQty = item.initialQty ?? 1;
 
       if (existing) {
         return {
           cart: state.cart.map((i) =>
             i.id === item.id
-              ? { ...i, quantity: i.quantity + 1 }
+              ? {
+                  ...i,
+                  price: item.price,
+                  packSize: item.packSize,
+                  quantity: i.stock
+                    ? Math.min(i.quantity + addQty, i.stock)
+                    : i.quantity + addQty,
+                }
               : i
           ),
         };
       }
 
       return {
-        cart: [...state.cart, { ...item, quantity: 1 }],
+        cart: [
+          ...state.cart,
+          {
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            packSize: item.packSize,
+            stock: item.stock,
+            quantity: item.stock ? Math.min(addQty, item.stock) : addQty,
+          },
+        ],
       };
     }),
 
-  removeFromCart: (id) =>
+  incrementQty: (id) =>
     set((state) => ({
-      cart: state.cart.filter((i) => i.id !== id),
+      cart: state.cart.map((i) =>
+        i.id === id
+          ? { ...i, quantity: i.stock ? Math.min(i.quantity + 1, i.stock) : i.quantity + 1 }
+          : i
+      ),
     })),
 
+  decrementQty: (id) =>
+    set((state) => ({
+      cart: state.cart
+        .map((i) => (i.id === id ? { ...i, quantity: Math.max(0, i.quantity - 1) } : i))
+        .filter((i) => i.quantity > 0),
+    })),
+
+  removeFromCart: (id) =>
+    set((state) => ({ cart: state.cart.filter((i) => i.id !== id) })),
+
   clearCart: () => set({ cart: [] }),
-
-  totalItems: () =>
-    get().cart.reduce((acc, item) => acc + item.quantity, 0),
-
-  totalPrice: () =>
-    get().cart.reduce(
-      (acc, item) => acc + item.price * item.quantity,
-      0
-    ),
 }));

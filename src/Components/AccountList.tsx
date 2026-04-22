@@ -22,7 +22,7 @@ function AccountList() {
     try {
       const roleType = localStorage.getItem("roletype")
       const userData = JSON.parse(localStorage.getItem("UserData") || "{}")
-      
+
       setRole(roleType)
       setUser(userData)
     } catch (error) {
@@ -32,7 +32,7 @@ function AccountList() {
   }, [])
 
   if (!mounted) {
-    return null 
+    return null
   }
 
   const image = "https://i.sstatic.net/l60Hf.png"
@@ -42,30 +42,30 @@ function AccountList() {
     role === "3"
       ? user.name || user.username || "Administrator"
       : role === "2"
-      ? user.Dealer_Name || user.name || "Dealer"
-      : user.name || user.username || "Staff"
+        ? user.Dealer_Name || user.name || "Dealer"
+        : user.name || user.username || "Staff"
 
   const userEmail =
     role === "3"
       ? user.email || "admin@omsons.com"
       : role === "2"
-      ? user.Dealer_Email || user.email || "dealer@omsons.com"
-      : user.email || "staff@omsons.com"
+        ? user.Dealer_Email || user.email || "dealer@omsons.com"
+        : user.email || "staff@omsons.com"
 
   // Dynamic route
   const dashboardLink =
     role === "3"
-      ? "Dashboard/admin"
+      ? "dashboard/admin"
       : role === "2"
-      ? "Dashboard/dealer"
-      : "Dashboard/staff"
+        ? "dashboard/dealer"
+        : "dashboard/staff"
 
   const roleLabel =
     role === "3"
       ? "Admin"
       : role === "2"
-      ? "Dealer"
-      : "Staff"
+        ? "Dealer"
+        : "Staff"
 
   const handleLogout = () => {
     localStorage.clear()

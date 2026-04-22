@@ -1,27 +1,25 @@
 "use client";
 
+import { useCartStore } from "@/Store/store";
+
 type Props = {
-  product: string;
-  quantity: number;
-//   price?: number;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    packSize: number;  
+  };
 };
 
-
-const AddToCart = ({ product, quantity,  }: Props) => {
-
-
-  const handleAdd = () => {
-      console.log("clicked", { product, quantity,  });
-  };
+export default function AddToCartButton({ product }: Props) {
+  const addToCart = useCartStore((s) => s.addToCart);
 
   return (
     <button
-      onClick={handleAdd}
-      className="bg-yellow-500 text-white px-4 py-2 rounded-2xl"
+      onClick={() => addToCart(product)}
+      className="bg-yellow-400 border hover:bg-yellow-500 text-white px-4 py-2 rounded w-full"
     >
       Add to Cart
     </button>
   );
-};
-
-export default AddToCart;
+}

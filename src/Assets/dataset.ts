@@ -155,3 +155,4 @@ export const categories = [
   { label: "Toys & Games", value: "toys-games" },
   { label: "Watches", value: "watches" },
 ];
+

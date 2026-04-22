@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { LayoutDashboard, UserRoundPlus, Users, SquareUser, Plus, ClipboardList } from 'lucide-react';
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -39,37 +41,47 @@ type AdminUser = {
   name?: string;
 };
 
-const logoImage ="http://sapoms.com/images/Omsons%20-%20White.png";
+const logoImage = "https://omsonsapp.vercel.app/headicon.png";
 
 
 const NAV_ITEMS = [
   {
-    label: "DealersList",
-    href: "/Pages/DealerList",
-    icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
+    label: "Dealer List",
+    href: "/Dashboard/admin/dealer/DealerList",
+    icon: <LayoutDashboard />
   },
-  // {
-  //   label: "Reports",
-  //   href: "/admin/reports",
-  //   icon: (
-  //     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-  //       <path d="M3 3h18v18H3z" /><path d="M7 12h3v6H7zM13 8h3v10h-3z" />
-  //     </svg>
-  //   ),
-  // },
   {
-    label: "+ Dealers",
-    href: "/Pages/AddDealerForm",
-    icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      </svg>
-    ),
+    label: "Add Dealer",
+    href: "/Dashboard/admin/dealer/AddDealerForm",
+    icon: <UserRoundPlus />
+  },
+  {
+    label: "Staff List",
+    href: "/Dashboard/admin/staff/stafflist",
+    icon: <Users />
+  },
+  {
+    label: "Add Staff",
+    href: "/Dashboard/admin/staff/addstaff",
+    icon: <SquareUser />
+  },
+  {
+    label: "Products  ",
+    href: "/Pages/products",
+    icon: <SquareUser />
+  },
+  {
+    label: "Add products",
+    href: "/Pages/products/addproducts",
+    icon: <SquareUser />
+  },
+  { label: "Order List",
+     href: "/Pages/Ordermanagement", 
+     icon: <ClipboardList size={15} /> 
+  },
+  { label: "Pending Orders",
+     href: "/Pages/Ordermanagement/outstandingorders",
+    icon: <ClipboardList size={15} /> 
   },
 ];
 
@@ -165,6 +177,7 @@ export default function AdminDashboard() {
     .toUpperCase()
     .substring(0, 2) || "AD";
 
+  console.log(adminUser);
   return (
     <>
       <style>{`
@@ -281,7 +294,7 @@ export default function AdminDashboard() {
         />
 
         {/* ── Sidebar ── */}
-        <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
+        {/* <aside className={`sidebar${sidebarOpen ? " open" : ""}`}>
           <div className="sb-head">
             <div className="sb-chip">Admin Portal</div>
             <div className="sb-title">Workspace</div>
@@ -313,11 +326,11 @@ export default function AdminDashboard() {
           <div className="sb-foot">
             <button className="sb-logout" onClick={handleLogout}>Sign out</button>
           </div>
-        </aside>
+        </aside> */}
 
         {/* ── Main ── */}
         <div className="main">
-          <header className="topbar bg-linear from-bg-blue-500 to-bg-blue-600">
+          {/* <header className="topbar bg-linear from-bg-blue-500 to-bg-blue-600">
             <div className="topbar-l">
               <button
                 className="hamburger"
@@ -332,12 +345,12 @@ export default function AdminDashboard() {
               <img src={logoImage} alt="amazonLogo" className="h-12" />
               <div style={{ minWidth: 0 }}>
                 <div className="topbar-title">
-                  {loading ? "Dashboard" : `Welcome, ${adminUser.name || adminUser.username || "Admin"}`}
+                  {loading ? "Dashboard" : `Welcome, ${adminUser.name || adminUser.username || 'Admin'}`}
                 </div>
                 <div className="topbar-sub">System administration dashboard</div>
               </div>
             </div>
-          </header>
+          </header> */}
 
           <main className="content">
 
@@ -350,12 +363,12 @@ export default function AdminDashboard() {
                     stat.key === "orderCount" ? "badge-blue" : "badge-purple";
 
                 return (
-                  
-                    <div key={stat.key} className="stat-card">
-                      <div className="stat-lbl">{stat.label}</div>
-                      <div className="stat-val">{loading ? "—" : value}</div>
-                      <div className={`stat-badge ${badgeClass}`}>{value.toLocaleString("en-IN")}</div>
-                    </div>
+
+                  <div key={stat.key} className="stat-card">
+                    <div className="stat-lbl">{stat.label}</div>
+                    <div className="stat-val">{loading ? "—" : value}</div>
+                    <div className={`stat-badge ${badgeClass}`}>{value.toLocaleString("en-IN")}</div>
+                  </div>
 
                 );
               })}
