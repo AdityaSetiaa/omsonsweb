@@ -10,6 +10,8 @@ import { bottleProducts, NAV_LINKS, CATEGORY_CARDS } from "@/Assets/dataset";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import axios from "axios";
+// import { getRecentlyViewed, pushRecentlyViewed, type RecentlyViewedItem } from "@/components/Header";
+
 import { getRecentlyViewed, pushRecentlyViewed, type RecentlyViewedItem } from "@/components/Header";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
