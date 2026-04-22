@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Sidebar from "@/components/layout/Sidebar";
+import Sidebar from "../../components/layout/Sidebar";
 
 type Role = "admin" | "dealer" | "staff";
 
